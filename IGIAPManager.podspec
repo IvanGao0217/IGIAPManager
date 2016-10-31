@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = 'IGIAPManager'
-  s.version      = '0.0.1'
+  s.version      = '0.0.2'
   s.summary      = 'A simple swift manger to mange your IAP.'
   s.homepage     = 'https://github.com/IvanGao0217/IGIAPManager'
   s.license      = { :type => 'MIT', :file => 'LICENSE' }
