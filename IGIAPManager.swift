@@ -9,7 +9,7 @@
 import Foundation
 import StoreKit
 
-protocol IGIAPManagerDelegate: NSObjectProtocol {
+public protocol IGIAPManagerDelegate: NSObjectProtocol {
     
     func iapProductionListRequestSuccess()
     func iapProductionListRequestFailed()
@@ -17,34 +17,34 @@ protocol IGIAPManagerDelegate: NSObjectProtocol {
     func iapProductionPurchaseFailed(productIdentifier: String, error: NSError?)
 }
 
-class IGIAPManager: NSObject {
-    static let sharedInstance = IGIAPManager()
-    weak var delegate: IGIAPManagerDelegate?
+public class IGIAPManager: NSObject {
+    public static let sharedInstance = IGIAPManager()
+    public weak var delegate: IGIAPManagerDelegate?
     private(set) var productList: [SKProduct] = []
     
-    static func addIAPTransactionObserver() {
+    public static func addIAPTransactionObserver() {
         SKPaymentQueue.default().add(sharedInstance)
     }
     
-    static func removeIAPTransactionObserver() {
+    public static func removeIAPTransactionObserver() {
         SKPaymentQueue.default().remove(sharedInstance)
     }
     
-    static func purchaseProductWithIapId(iapId: String) {
+    public static func purchaseProductWithIapId(iapId: String) {
         let products = sharedInstance.productList.filter { $0.productIdentifier == iapId }
         guard let product = products.first else { return }
         let payment = SKMutablePayment(product: product)
         SKPaymentQueue.default().add(payment)
     }
     
-    static func closeSuccessTransaction(transactionIdentifier: String) {
+    public static func closeSuccessTransaction(transactionIdentifier: String) {
         SKPaymentQueue.default().transactions.forEach { paymentTransaction in
             guard paymentTransaction.transactionIdentifier == transactionIdentifier else { return }
             SKPaymentQueue.default().finishTransaction(paymentTransaction)
         }
     }
     
-    static func closeFailedTransaction(productIdentifier: String) {
+    public static func closeFailedTransaction(productIdentifier: String) {
         SKPaymentQueue.default().transactions.forEach { paymentTransaction in
             guard paymentTransaction.payment.productIdentifier == productIdentifier else { return }
             SKPaymentQueue.default().finishTransaction(paymentTransaction)
@@ -53,7 +53,7 @@ class IGIAPManager: NSObject {
 }
 
 extension IGIAPManager: SKPaymentTransactionObserver {
-    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
+    public func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
         transactions.forEach { paymentTransaction in
             switch paymentTransaction.transactionState {
             case .failed:
@@ -73,13 +73,13 @@ extension IGIAPManager: SKPaymentTransactionObserver {
 
 extension IGIAPManager: SKProductsRequestDelegate {
     
-    static func productRequest(iapIds: [String]) {
+    public static func productRequest(iapIds: [String]) {
         let request = SKProductsRequest(productIdentifiers: Set(iapIds))
         request.delegate = sharedInstance
         request.start()
     }
     
-    func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
+    public func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
         guard response.products.count > 0 else {
             self.delegate?.iapProductionListRequestFailed()
             return
