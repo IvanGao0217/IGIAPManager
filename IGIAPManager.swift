@@ -13,7 +13,7 @@ public protocol IGIAPManagerDelegate: NSObjectProtocol {
     
     func iapProductionListRequestSuccess()
     func iapProductionListRequestFailed()
-    func iapProductionPurchaseSuccess(paymentTransactionId: String, receiptString: String)
+    func iapProductionPurchaseSuccess(receiptString: String)
     func iapProductionPurchaseFailed(productIdentifier: String, error: NSError?)
 }
 
@@ -31,23 +31,20 @@ public class IGIAPManager: NSObject {
     }
     
     public static func purchaseProductWithIapId(iapId: String) {
-        let products = sharedInstance.productList.filter { $0.productIdentifier == iapId }
-        guard let product = products.first else { return }
-        let payment = SKMutablePayment(product: product)
-        SKPaymentQueue.default().add(payment)
+        let product = sharedInstance.productList.filter { $0.productIdentifier == productIdentifier }.map {
+            SKPaymentQueue.defaultQueue().addPayment(SKMutablePayment(product: $0))
+        }
     }
     
     public static func closeSuccessTransaction(transactionIdentifier: String) {
-        SKPaymentQueue.default().transactions.forEach { paymentTransaction in
-            guard paymentTransaction.transactionIdentifier == transactionIdentifier else { return }
-            SKPaymentQueue.default().finishTransaction(paymentTransaction)
+        SKPaymentQueue.defaultQueue().transactions.filter { $0.transactionIdentifier == transactionIdentifier }.map {
+            SKPaymentQueue.defaultQueue().finishTransaction($0)
         }
     }
     
     public static func closeFailedTransaction(productIdentifier: String) {
-        SKPaymentQueue.default().transactions.forEach { paymentTransaction in
-            guard paymentTransaction.payment.productIdentifier == productIdentifier else { return }
-            SKPaymentQueue.default().finishTransaction(paymentTransaction)
+        SKPaymentQueue.defaultQueue().transactions.filter { $0.payment.productIdentifier == productIdentifier && $0.transactionState == .Failed }.map {
+            SKPaymentQueue.defaultQueue().finishTransaction($0)
         }
     }
 }
@@ -62,7 +59,7 @@ extension IGIAPManager: SKPaymentTransactionObserver {
                 if let url = Bundle.main.appStoreReceiptURL,
                     let data = NSData(contentsOf: url) {
                     let receiptString = data.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue: 0))
-                    self.delegate?.iapProductionPurchaseSuccess(paymentTransactionId: paymentTransaction.transactionIdentifier!, receiptString: receiptString)
+                    self.delegate?.iapProductionPurchaseSuccess(receiptString)
                 }
             case .purchasing, .deferred:
                 break
@@ -80,10 +77,7 @@ extension IGIAPManager: SKProductsRequestDelegate {
     }
     
     public func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
-        guard response.products.count > 0 else {
-            self.delegate?.iapProductionListRequestFailed()
-            return
-        }
-        self.delegate?.iapProductionListRequestSuccess()
+        response.products.count > 0 ? self.delegate?.iapProductionListRequestSuccess() : self.delegate?.iapProductionListRequestFailed()
+        self.productList = response.products
     }
 }
